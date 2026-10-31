@@ -4,7 +4,7 @@
   "compatibility_date": "2025-05-05",
   "assets": { "directory": "./public", "binding": "ASSETS" },
   "kv_namespaces": [
-    { "binding": "GOLD_KV", "id": "PASTE_KV_ID_HERE" }
+    { "binding": "GOLD_KV", "id": "5abe6d6aa83c4885b3c7ad8cd1836338" }
   ],
   "triggers": { "crons": ["*/5 * * * *"] },
   "vars": {
