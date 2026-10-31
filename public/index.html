@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gold Analyzer</title>
+<link rel="manifest" href="/manifest.json"><meta name="theme-color" content="#0a0a0a">
+<link rel="icon" href="/icon-192.png"><link rel="apple-touch-icon" href="/icon-192.png">
+<style>
+ body{margin:0;background:#0a0a0a;color:#eee;font-family:system-ui,sans-serif}
+ main{max-width:860px;margin:auto;padding:14px}
+ .card{border:1px solid #262626;border-radius:10px;padding:14px;margin-bottom:12px}
+ .muted{color:#9a9a9a;font-size:13px}.big{font-size:38px;font-weight:600}
+ .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
+ .bar{height:8px;background:#262626;border-radius:4px;margin-top:10px}.bar>div{height:8px;background:#eab308;border-radius:4px}
+ .warn{background:#b45309;border-radius:4px;padding:2px 8px;font-size:12px;margin-left:8px}
+ .LONG{color:#22c55e}.SHORT{color:#ef4444}
+ button{background:#262626;color:#eee;border:0;border-radius:6px;padding:6px 12px;margin-right:6px;cursor:pointer}
+ button.on{background:#eab308;color:#000}
+ #chart{height:360px} footer{text-align:center;font-size:12px;color:#9a9a9a;padding:16px}
+ .err{color:#f87171;font-size:13px}
+</style></head><body><main>
+ <div class="card"><div class="muted">XAUUSD</div><div class="big" id="price">—</div>
+  <div>Daily bias: <b id="bias">—</b><span id="risk"></span></div><div class="muted" id="upd"></div><div class="err" id="err"></div></div>
+ <div class="card"><div id="label" style="font-size:22px;font-weight:600">Loading…</div>
+  <div class="grid" id="levels"></div>
+  <div class="bar"><div id="conf" style="width:0"></div></div><div class="muted" id="confTxt"></div>
+  <ul class="muted" id="reasons"></ul></div>
+ <div class="card"><div style="margin-bottom:8px"><button id="b5" class="on">5m</button><button id="b15">15m</button></div><div id="chart"></div></div>
+</main>
+<footer>This application provides analysis for educational purposes only. It does not execute trades and is not financial advice.</footer>
+<script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+<script>
+let tf="5m",data=null,lines=[];
+const chart=LightweightCharts.createChart(document.getElementById("chart"),{layout:{background:{color:"#0a0a0a"},textColor:"#bbb"},grid:{vertLines:{color:"#1c1c1c"},horzLines:{color:"#1c1c1c"}},timeScale:{timeVisible:true}});
+const cs=chart.addCandlestickSeries(),sm=chart.addLineSeries({color:"#60a5fa",lineWidth:1,priceLineVisible:false}),
+ bu=chart.addLineSeries({color:"#a78bfa",lineWidth:1,priceLineVisible:false}),bl=chart.addLineSeries({color:"#a78bfa",lineWidth:1,priceLineVisible:false});
+const ln=(c,t,a)=>c.map((x,i)=>a[i]==null?null:{time:x[0],value:a[i]}).filter(Boolean);
+function draw(){ if(!data||!data.charts)return; const d=data.charts[tf];
+ cs.setData(d.c.map(x=>({time:x[0],open:x[1],high:x[2],low:x[3],close:x[4]})));
+ sm.setData(ln(d.c,0,d.sma));bu.setData(ln(d.c,0,d.bu));bl.setData(ln(d.c,0,d.bl));
+ lines.forEach(l=>cs.removePriceLine(l));lines=[];const s=data.signal;
+ if(s&&s.side!=="NONE")[["Entry",s.entry,"#eab308"],["SL",s.sl,"#ef4444"],["TP",s.tp,"#22c55e"]].forEach(([t,p,c])=>lines.push(cs.createPriceLine({price:p,color:c,title:t,lineWidth:1})));
+ chart.timeScale().fitContent(); }
+async function load(){ try{ data=await (await fetch("/api/state")).json(); }catch(e){return}
+ if(data.empty){document.getElementById("label").textContent="هنوز داده‌ای نیست؛ حداکثر ۵ دقیقه صبر کن و صفحه را تازه کن";return}
+ const s=data.signal||{}; const c=data.charts&&data.charts["5m"].c; if(c)document.getElementById("price").textContent=c[c.length-1][4].toFixed(2);
+ document.getElementById("bias").textContent=s.bias||"—"; document.getElementById("risk").innerHTML=s.highEventRisk?'<span class="warn">HIGH EVENT RISK</span>':"";
+ const lab=document.getElementById("label"); lab.textContent=s.label||"—"; lab.className=s.side||"";
+ document.getElementById("levels").innerHTML=s.side&&s.side!=="NONE"?["Entry:entry","SL:sl","TP:tp","R:R:rr"].map(x=>{const[k,v]=x.split(/:(?=[a-z]+$)/);return `<div><div class="muted">${k}</div>${s[v]}</div>`}).join(""):"";
+ document.getElementById("conf").style.width=(s.confidence||0)+"%"; document.getElementById("confTxt").textContent="Confidence "+(s.confidence||0)+"%";
+ document.getElementById("reasons").innerHTML=(s.reasons||[]).map(r=>"<li>"+r+"</li>").join("");
+ document.getElementById("upd").textContent="Updated "+new Date(data.updatedAt).toLocaleTimeString();
+ document.getElementById("err").textContent=(data.errors||[]).join(" | "); draw(); }
+document.getElementById("b5").onclick=()=>{tf="5m";b5.className="on";b15.className="";draw()};
+document.getElementById("b15").onclick=()=>{tf="15m";b15.className="on";b5.className="";draw()};
+load(); setInterval(load,60000);
+if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js");
+</script></body></html>

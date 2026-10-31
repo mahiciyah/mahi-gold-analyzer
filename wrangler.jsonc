@@ -1,0 +1,15 @@
+{
+  "name": "gold-analyzer",
+  "main": "worker.js",
+  "compatibility_date": "2025-05-05",
+  "assets": { "directory": "./public", "binding": "ASSETS" },
+  "kv_namespaces": [
+    { "binding": "GOLD_KV", "id": "PASTE_KV_ID_HERE" }
+  ],
+  "triggers": { "crons": ["*/5 * * * *"] },
+  "vars": {
+    // رویدادهای مهم دلاری (FOMC/CPI/NFP) را اینجا بنویس، با کاما جدا کن. زمان UTC:
+    // "2026-11-05T19:00:00Z,2026-12-04T13:30:00Z"
+    "HIGH_EVENTS": ""
+  }
+}
