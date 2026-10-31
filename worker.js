@@ -110,17 +110,21 @@ function chartData(c, n = 120) {
 async function run(env, when) {
   const minute = new Date(when).getUTCMinutes(), now = Date.now();
   const prev = (await env.GOLD_KV.get("state", "json")) || {};
-  const errors = []; let { c5, c15, c1d } = prev;
+  const errors = []; let { c5, c15, c1d, c1h, c4h } = prev;
   try { c5 = await td(env, "5min", 200); } catch (e) { errors.push("5m: " + e.message); }
   if (!c15 || minute % 15 === 0) { try { c15 = await td(env, "15min", 200); } catch (e) { errors.push("15m: " + e.message); } }
   if (!c1d || minute === 0)      { try { c1d = await td(env, "1day", 260); }  catch (e) { errors.push("1d: " + e.message); } }
+  if (!c1h || minute === 0)      { try { c1h = await td(env, "1h", 200); }    catch (e) { errors.push("1h: " + e.message); } }
+  if (!c4h || (minute === 0 && new Date(when).getUTCHours() % 4 === 0)) { try { c4h = await td(env, "4h", 200); } catch (e) { errors.push("4h: " + e.message); } }
 
-  const state = { updatedAt: now, errors, c5, c15, c1d, signal: prev.signal, charts: prev.charts };
+  const state = { updatedAt: now, errors, c5, c15, c1d, c1h, c4h, signal: prev.signal, charts: prev.charts };
   if (c5 && c15 && c1d) {
     const ev = (env.HIGH_EVENTS || "").split(",").map(s => Date.parse(s.trim())).filter(Boolean);
     const eventRisk = ev.some(t => t >= now && t - now <= 24 * 3600e3);
     state.signal = makeSignal({ c5, c15, c1d, eventRisk, now });
-    state.charts = { "5m": chartData(c5), "15m": chartData(c15) };
+    state.charts = { "5m": chartData(c5), "15m": chartData(c15), "1d": chartData(c1d) };
+    if (c1h) state.charts["1h"] = chartData(c1h);
+    if (c4h) state.charts["4h"] = chartData(c4h);
   }
   await env.GOLD_KV.put("state", JSON.stringify(state));
 }
