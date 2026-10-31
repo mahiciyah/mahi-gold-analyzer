@@ -24,9 +24,9 @@
   <div class="grid" id="levels"></div>
   <div class="bar"><div id="conf" style="width:0"></div></div><div class="muted" id="confTxt"></div>
   <ul class="muted" id="reasons"></ul></div>
- <div class="card"><div style="margin-bottom:8px"><button id="b5" class="on">5m</button><button id="b15">15m</button></div><div id="chart"></div></div>
+ <div class="card"><div id="tfs" style="margin-bottom:8px"></div><div id="chart"></div></div>
 </main>
-<footer>This application provides analysis for educational purposes only. It does not execute trades and is not financial advice.</footer>
+<footer>This application provides analysis for educational purposes only. It does not execute trades and is not financial advice MAHICIYAH.</footer>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <script>
 let tf="5m",data=null,lines=[];
@@ -35,6 +35,7 @@ const cs=chart.addCandlestickSeries(),sm=chart.addLineSeries({color:"#60a5fa",li
  bu=chart.addLineSeries({color:"#a78bfa",lineWidth:1,priceLineVisible:false}),bl=chart.addLineSeries({color:"#a78bfa",lineWidth:1,priceLineVisible:false});
 const ln=(c,t,a)=>c.map((x,i)=>a[i]==null?null:{time:x[0],value:a[i]}).filter(Boolean);
 function draw(){ if(!data||!data.charts)return; const d=data.charts[tf];
+ if(!d){cs.setData([]);sm.setData([]);bu.setData([]);bl.setData([]);return}
  cs.setData(d.c.map(x=>({time:x[0],open:x[1],high:x[2],low:x[3],close:x[4]})));
  sm.setData(ln(d.c,0,d.sma));bu.setData(ln(d.c,0,d.bu));bl.setData(ln(d.c,0,d.bl));
  lines.forEach(l=>cs.removePriceLine(l));lines=[];const s=data.signal;
@@ -50,8 +51,9 @@ async function load(){ try{ data=await (await fetch("/api/state")).json(); }catc
  document.getElementById("reasons").innerHTML=(s.reasons||[]).map(r=>"<li>"+r+"</li>").join("");
  document.getElementById("upd").textContent="Updated "+new Date(data.updatedAt).toLocaleTimeString();
  document.getElementById("err").textContent=(data.errors||[]).join(" | "); draw(); }
-document.getElementById("b5").onclick=()=>{tf="5m";b5.className="on";b15.className="";draw()};
-document.getElementById("b15").onclick=()=>{tf="15m";b15.className="on";b5.className="";draw()};
+const TFS=["5m","15m","1h","4h","1d"],box=document.getElementById("tfs");
+TFS.forEach(t=>{const b=document.createElement("button");b.textContent=t;b.className=t===tf?"on":"";
+ b.onclick=()=>{tf=t;[...box.children].forEach(x=>x.className=x===b?"on":"");draw()};box.appendChild(b)});
 load(); setInterval(load,60000);
 if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js");
 </script></body></html>
